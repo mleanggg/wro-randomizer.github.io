@@ -7,7 +7,7 @@
   <title>WRO Future Engineers Randomizer</title>
 
   <style>
-    /* ---------- Color tokens (light theme by default) ---------- */
+    /* ---------- Color tokens ---------- */
     :root {
       --bg: #ffffff;
       --fg: #14142b;
@@ -19,11 +19,15 @@
       --card: #f3f4f8;
 
       box-sizing: border-box;
-      padding-top: env(safe-area-inset-top, 0px);
-      padding-bottom: env(safe-area-inset-bottom, 0px);
     }
 
-    /* ---------- Dark theme (follows the system setting) ---------- */
+    *,
+    *::before,
+    *::after {
+      box-sizing: border-box;
+    }
+
+    /* ---------- Dark theme ---------- */
     @media (prefers-color-scheme: dark) {
       :root:not([data-theme="light"]) {
         --bg: #12121c;
@@ -42,30 +46,44 @@
 
     /* ---------- Page layout ---------- */
     html {
+      min-height: 100%;
       scroll-padding-top: env(safe-area-inset-top, 0px);
     }
 
     body {
       margin: 0;
+      min-height: 100vh;
+      padding-top: env(safe-area-inset-top, 0px);
+      padding-bottom: env(safe-area-inset-bottom, 0px);
       background: var(--bg);
       color: var(--fg);
       font-family: "Muli", "Segoe UI", system-ui, sans-serif;
       text-align: center;
+
+      display: flex;
+      flex-direction: column;
+      align-items: center;
     }
 
     h1 {
+      width: 100%;
       font-weight: 500;
       font-size: clamp(1.4rem, 3.5vw, 2.2rem);
-      margin: 28px 12px 18px;
+      margin: 0;
+      padding: 85px 12px 28px;
     }
 
     .wrap {
+      width: 100%;
+      max-width: 1400px;
+      flex: 1;
       display: flex;
       align-items: center;
       justify-content: center;
       gap: 40px;
       flex-wrap: wrap;
-      padding: 0 16px 24px;
+      padding: 15px 16px 40px;
+      margin: 0 auto;
     }
 
     .side {
@@ -73,6 +91,7 @@
       flex-direction: column;
       gap: 18px;
       width: 260px;
+      flex-shrink: 0;
       align-items: stretch;
     }
 
@@ -86,6 +105,11 @@
       font-size: 1.25rem;
       padding: 16px 20px;
       cursor: pointer;
+      transition: filter 0.15s ease;
+    }
+
+    .btn:hover {
+      filter: brightness(0.96);
     }
 
     .btn:active {
@@ -99,7 +123,7 @@
       font-weight: 700;
     }
 
-    /* ---------- Direction selector (Random / CCW / CW) ---------- */
+    /* ---------- Direction selector ---------- */
     .seg {
       display: flex;
       background: var(--seg);
@@ -128,6 +152,7 @@
     #field {
       width: min(100%, 620px);
       flex: 0 1 620px;
+      min-width: 0;
     }
 
     #field svg {
@@ -140,6 +165,7 @@
     .timer {
       font-size: 3rem;
       font-variant-numeric: tabular-nums;
+      white-space: nowrap;
     }
 
     .timer small {
@@ -168,6 +194,55 @@
       color: var(--muted);
       font-size: 0.9rem;
     }
+
+    /* ---------- Responsive layout ---------- */
+    @media (min-width: 900px) {
+      .wrap {
+        transform: translateY(-15px);
+      }
+    }
+
+    @media (max-width: 899px) {
+      h1 {
+        padding-top: 35px;
+        padding-bottom: 22px;
+      }
+
+      .wrap {
+        gap: 24px;
+        padding-top: 10px;
+      }
+
+      .side {
+        width: min(100%, 260px);
+      }
+
+      #field {
+        flex-basis: min(100%, 620px);
+        order: -1;
+      }
+    }
+
+    @media (max-width: 480px) {
+      h1 {
+        font-size: 1.5rem;
+        padding-top: 28px;
+      }
+
+      .wrap {
+        gap: 20px;
+        padding-left: 12px;
+        padding-right: 12px;
+      }
+
+      .timer {
+        font-size: 2.5rem;
+      }
+
+      .side {
+        max-width: 260px;
+      }
+    }
   </style>
 </head>
 
@@ -184,10 +259,11 @@
         <button data-d="CCW">CCW</button>
         <button data-d="CW">CW</button>
       </div>
+
       <button class="btn" id="rnd">Randomize</button>
     </div>
 
-    <!-- Center: the field is drawn here as SVG -->
+    <!-- Center: game field -->
     <div id="field"></div>
 
     <!-- Right column: timer -->
@@ -195,6 +271,7 @@
       <div class="timer">
         <span id="t">00:00</span><small id="cs">00</small>
       </div>
+
       <button class="btn" id="start">Start timer</button>
       <button class="btn alt" id="reset">Reset</button>
     </div>
@@ -204,53 +281,51 @@
   <script>
     /* =====================================================
        FIELD DATA
-       ===================================================== */
+    ===================================================== */
 
-    // The 12 possible obstacle positions [x, y] in mm (field is 3000 x 3000).
-    // 4 sections (one per side), 3 positions per section.
-    var POS = [
-      [1000,  500], [1500,  500], [2000,  500],   // bottom side
-      [2500, 1000], [2500, 1500], [2500, 2000],   // right side
-      [2000, 2500], [1500, 2500], [1000, 2500],   // top side
-      [ 500, 2000], [ 500, 1500], [ 500, 1000]    // left side
+    // The 12 possible obstacle positions [x, y] in mm.
+    // The field is 3000 x 3000 mm.
+    const POS = [
+      [1000, 500], [1500, 500], [2000, 500],
+      [2500, 1000], [2500, 1500], [2500, 2000],
+      [2000, 2500], [1500, 2500], [1000, 2500],
+      [500, 2000], [500, 1500], [500, 1000]
     ];
 
     // Colored corner lines: [color, x1, y1, x2, y2]
     // "b" = blue, "o" = orange
-    var LINES = [
-      ["b",  200, 3000, 1000, 2000],
-      ["o",    0, 2580, 1000, 2000],
+    const LINES = [
+      ["b", 200, 3000, 1000, 2000],
+      ["o", 0, 2580, 1000, 2000],
       ["o", 2580, 3000, 2000, 2000],
       ["b", 3000, 2580, 2000, 2000],
-      ["o", 3000,  420, 2000, 1000],
-      ["b", 2580,    0, 2000, 1000],
-      ["o",  400,    0, 1000, 1000],
-      ["b",    0,  420, 1000, 1000]
+      ["o", 3000, 420, 2000, 1000],
+      ["b", 2580, 0, 2000, 1000],
+      ["o", 400, 0, 1000, 1000],
+      ["b", 0, 420, 1000, 1000]
     ];
 
-    // Colors: R = red obstacle, G = green obstacle, b = blue line, o = orange line
-    var COL = {
+    // Colors
+    const COL = {
       R: "#e8301f",
       G: "#2f7d1f",
       b: "#2a3f9e",
       o: "#e07b2b"
     };
 
-
     /* =====================================================
        STATE
-       ===================================================== */
+    ===================================================== */
 
-    var obs = new Array(12).fill(null);  // obstacle color at each position (null = empty)
-    var dirMode = "rand";                // "rand", "CCW" or "CW" (what the selector says)
-    var dir = "CCW";                     // the direction actually in use
-
+    let obs = new Array(12).fill(null);
+    let dirMode = "rand";
+    let dir = "CCW";
 
     /* =====================================================
        HELPERS
-       ===================================================== */
+    ===================================================== */
 
-    // SVG's y axis points down, the field's points up, so flip it.
+    // Flip the y-coordinate because SVG's y-axis points down.
     function Y(y) {
       return 3000 - y;
     }
@@ -260,170 +335,173 @@
       return arr[Math.floor(Math.random() * arr.length)];
     }
 
-
     /* =====================================================
        RANDOMIZE
-       ===================================================== */
+    ===================================================== */
 
     function randomize() {
       obs = new Array(12).fill(null);
 
-      // Each of the 4 sections gets 1 or 2 obstacles.
-      for (var section = 0; section < 4; section++) {
+      // Each section gets either 1 or 2 obstacles.
+      for (let section = 0; section < 4; section++) {
+        let slots;
 
-        var slots;
         if (pick([1, 2]) === 1) {
-          // One obstacle in a random slot (0, 1 or 2)
+          // One obstacle in a random slot.
           slots = [pick([0, 1, 2])];
         } else {
-          // Two obstacles: never the middle slot
+          // Two obstacles, never using the middle slot.
           slots = [0, 2];
         }
 
-        // Give each chosen slot a random red or green obstacle
+        // Randomly assign red or green.
         slots.forEach(function (k) {
           obs[section * 3 + k] = pick(["R", "G"]);
         });
       }
 
-      // Direction: random, or whatever the selector is set to
-      dir = (dirMode === "rand") ? pick(["CCW", "CW"]) : dirMode;
+      // Select the driving direction.
+      dir = dirMode === "rand"
+        ? pick(["CCW", "CW"])
+        : dirMode;
 
       render();
     }
 
-
     /* =====================================================
        DRAW THE FIELD (SVG)
-       ===================================================== */
+    ===================================================== */
 
     function render() {
-      var s = '<svg viewBox="-250 -250 3500 3500" xmlns="http://www.w3.org/2000/svg">';
+      let s = '<svg viewBox="-250 -250 3500 3500" xmlns="http://www.w3.org/2000/svg">';
 
-      // Dark border + white field
+      // Dark border and white field.
       s += '<rect x="-250" y="-250" width="3500" height="3500" fill="#0d0a4a"/>';
       s += '<rect x="0" y="0" width="3000" height="3000" fill="#fff"/>';
 
-      // Colored lines
+      // Colored lines.
       LINES.forEach(function (l) {
         s += '<line x1="' + l[1] + '" y1="' + Y(l[2]) +
-             '" x2="' + l[3] + '" y2="' + Y(l[4]) +
-             '" stroke="' + COL[l[0]] + '" stroke-width="40"/>';
+          '" x2="' + l[3] + '" y2="' + Y(l[4]) +
+          '" stroke="' + COL[l[0]] + '" stroke-width="40"/>';
       });
 
-      // Center square
+      // Center square.
       s += '<rect x="1000" y="1000" width="1000" height="1000" ' +
-           'fill="#f2f3fa" stroke="#000" stroke-width="40"/>';
+        'fill="#f2f3fa" stroke="#000" stroke-width="40"/>';
 
-      // Obstacle circles with their position number (grey = empty)
+      // Obstacle circles and position numbers.
       POS.forEach(function (p, i) {
-        var fill = obs[i] ? COL[obs[i]] : "#ccc";
+        let fill = obs[i] ? COL[obs[i]] : "#ccc";
 
-        s += '<circle cx="' + p[0] + '" cy="' + Y(p[1]) + '" r="95" fill="' + fill + '"/>';
-        s += '<text x="' + p[0] + '" y="' + (Y(p[1]) + 35) + '" text-anchor="middle" ' +
-             'font-size="100" font-weight="700" fill="#fff">' + i + '</text>';
+        s += '<circle cx="' + p[0] + '" cy="' + Y(p[1]) +
+          '" r="95" fill="' + fill + '"/>';
+
+        s += '<text x="' + p[0] + '" y="' + (Y(p[1]) + 35) +
+          '" text-anchor="middle" font-size="100" font-weight="700" ' +
+          'fill="#fff">' + i + '</text>';
       });
 
-      // Direction arrow + label in the middle
+      // Direction arrow and label.
       s += '<text x="1500" y="1450" text-anchor="middle" font-size="260" ' +
-           'font-weight="700" fill="#2860b4">' + (dir === "CCW" ? "↺" : "↻") + '</text>';
+        'font-weight="700" fill="#2860b4">' +
+        (dir === "CCW" ? "↺" : "↻") + '</text>';
+
       s += '<text x="1500" y="1700" text-anchor="middle" font-size="190" ' +
-           'font-weight="700" fill="#2860b4">' + dir + '</text>';
+        'font-weight="700" fill="#2860b4">' + dir + '</text>';
 
       s += '</svg>';
 
       document.getElementById("field").innerHTML = s;
     }
 
-
     /* =====================================================
        BUTTONS
-       ===================================================== */
+    ===================================================== */
 
-    // Randomize button
+    // Randomize button.
     document.getElementById("rnd").onclick = randomize;
 
-    // Direction selector (Random / CCW / CW)
+    // Direction selector.
     document.getElementById("dirSeg").onclick = function (e) {
-      var b = e.target.closest("button");
+      const b = e.target.closest("button");
       if (!b) return;
 
       dirMode = b.dataset.d;
 
-      // Highlight the clicked button
-      [].forEach.call(this.children, function (c) {
+      // Highlight the selected button.
+      Array.from(this.children).forEach(function (c) {
         c.classList.toggle("on", c === b);
       });
 
-      // If a fixed direction was chosen, apply it right away
+      // Immediately apply a fixed direction.
       if (dirMode !== "rand") {
         dir = dirMode;
         render();
       }
     };
 
-
     /* =====================================================
        TIMER
-       ===================================================== */
+    ===================================================== */
 
-    var t0 = 0;        // when the timer was last started
-    var acc = 0;       // time accumulated from earlier runs (ms)
-    var run = false;   // is the timer running?
-    var iv = null;     // the setInterval handle
+    let t0 = 0;
+    let acc = 0;
+    let running = false;
+    let iv = null;
 
-    // Show a time in ms as MM:SS and centiseconds
+    // Display milliseconds as MM:SS and centiseconds.
     function fmt(ms) {
-      var cs = Math.floor(ms / 10) % 100;
-      var sec = Math.floor(ms / 1000);
-      var min = Math.floor(sec / 60);
-      sec = sec % 60;
+      const cs = Math.floor(ms / 10) % 100;
+      const sec = Math.floor(ms / 1000);
+      const min = Math.floor(sec / 60);
+      const remainingSec = sec % 60;
 
       document.getElementById("t").textContent =
-        String(min).padStart(2, "0") + ":" + String(sec).padStart(2, "0");
+        String(min).padStart(2, "0") + ":" +
+        String(remainingSec).padStart(2, "0");
+
       document.getElementById("cs").textContent =
         String(cs).padStart(2, "0");
     }
 
-    // Called every 30 ms while running
+    // Update the timer.
     function tick() {
       fmt(acc + performance.now() - t0);
     }
 
-    // Start / Stop button
+    // Start / Stop button.
     document.getElementById("start").onclick = function () {
-      if (!run) {
-        // start
-        run = true;
+      if (!running) {
+        running = true;
         t0 = performance.now();
         iv = setInterval(tick, 30);
         this.textContent = "Stop timer";
       } else {
-        // stop
-        run = false;
+        running = false;
         clearInterval(iv);
         acc += performance.now() - t0;
         this.textContent = "Start timer";
+        tick();
       }
     };
 
-    // Reset button
+    // Reset button.
     document.getElementById("reset").onclick = function () {
-      run = false;
+      running = false;
       clearInterval(iv);
       acc = 0;
       fmt(0);
       document.getElementById("start").textContent = "Start timer";
     };
 
-
     /* =====================================================
        START
-       ===================================================== */
+    ===================================================== */
 
-    randomize();   // generate a field when the page loads
+    // Generate a random field when the page loads.
+    randomize();
   </script>
 
 </body>
-
 </html>
