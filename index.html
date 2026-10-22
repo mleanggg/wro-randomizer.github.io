@@ -1,106 +1,429 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>WRO Future Engineers Randomizer</title>
-<style>
-:root{--bg:#ffffff;--fg:#14142b;--muted:#6b6b80;--btn:#d81b78;--btn-fg:#fff;--seg:#d81b78;--seg-on:#fff;--card:#f3f4f8;
-box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
-@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#12121c;--fg:#ececf5;--muted:#9a9ab0;--card:#1d1d2c}}
-:root[data-theme="dark"]{--bg:#12121c;--fg:#ececf5;--muted:#9a9ab0;--card:#1d1d2c}
-html{scroll-padding-top:env(safe-area-inset-top,0px)}
-body{margin:0;background:var(--bg);color:var(--fg);font-family:"Muli","Segoe UI",system-ui,sans-serif;text-align:center}
-h1{font-weight:500;font-size:clamp(1.4rem,3.5vw,2.2rem);margin:28px 12px 18px}
-.wrap{display:flex;align-items:center;justify-content:center;gap:40px;flex-wrap:wrap;padding:0 16px 24px}
-.side{display:flex;flex-direction:column;gap:18px;width:260px;align-items:stretch}
-.btn{border:0;border-radius:999px;background:var(--btn);color:var(--btn-fg);font:inherit;font-size:1.25rem;padding:16px 20px;cursor:pointer}
-.btn:active{filter:brightness(.9)}
-.btn.alt{background:transparent;color:var(--btn);border:3px solid var(--btn);font-weight:700}
-.seg{display:flex;background:var(--seg);border-radius:999px;padding:5px}
-.seg button{flex:1;border:0;background:transparent;color:#fff;font:inherit;padding:10px 4px;border-radius:999px;cursor:pointer}
-.seg button.on{background:var(--seg-on);color:var(--btn);font-weight:700}
-#field{width:min(100%,620px);flex:0 1 620px}
-#field svg{width:100%;height:auto;display:block}
-.timer{font-size:3rem;font-variant-numeric:tabular-nums}
-.timer small{font-size:1.1rem;margin-left:8px}
-.out{max-width:760px;margin:0 auto 28px;padding:0 16px}
-pre{background:var(--card);border-radius:12px;padding:12px;text-align:left;overflow-x:auto;font-size:.85rem;margin:8px 0}
-.muted{color:var(--muted);font-size:.9rem}
-</style>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>WRO Future Engineers Randomizer</title>
+
+  <style>
+    /* ---------- Color tokens (light theme by default) ---------- */
+    :root {
+      --bg: #ffffff;
+      --fg: #14142b;
+      --muted: #6b6b80;
+      --btn: #d81b78;
+      --btn-fg: #ffffff;
+      --seg: #d81b78;
+      --seg-on: #ffffff;
+      --card: #f3f4f8;
+
+      box-sizing: border-box;
+      padding-top: env(safe-area-inset-top, 0px);
+      padding-bottom: env(safe-area-inset-bottom, 0px);
+    }
+
+    /* ---------- Dark theme (follows the system setting) ---------- */
+    @media (prefers-color-scheme: dark) {
+      :root:not([data-theme="light"]) {
+        --bg: #12121c;
+        --fg: #ececf5;
+        --muted: #9a9ab0;
+        --card: #1d1d2c;
+      }
+    }
+
+    :root[data-theme="dark"] {
+      --bg: #12121c;
+      --fg: #ececf5;
+      --muted: #9a9ab0;
+      --card: #1d1d2c;
+    }
+
+    /* ---------- Page layout ---------- */
+    html {
+      scroll-padding-top: env(safe-area-inset-top, 0px);
+    }
+
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--fg);
+      font-family: "Muli", "Segoe UI", system-ui, sans-serif;
+      text-align: center;
+    }
+
+    h1 {
+      font-weight: 500;
+      font-size: clamp(1.4rem, 3.5vw, 2.2rem);
+      margin: 28px 12px 18px;
+    }
+
+    .wrap {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 40px;
+      flex-wrap: wrap;
+      padding: 0 16px 24px;
+    }
+
+    .side {
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+      width: 260px;
+      align-items: stretch;
+    }
+
+    /* ---------- Buttons ---------- */
+    .btn {
+      border: 0;
+      border-radius: 999px;
+      background: var(--btn);
+      color: var(--btn-fg);
+      font: inherit;
+      font-size: 1.25rem;
+      padding: 16px 20px;
+      cursor: pointer;
+    }
+
+    .btn:active {
+      filter: brightness(0.9);
+    }
+
+    .btn.alt {
+      background: transparent;
+      color: var(--btn);
+      border: 3px solid var(--btn);
+      font-weight: 700;
+    }
+
+    /* ---------- Direction selector (Random / CCW / CW) ---------- */
+    .seg {
+      display: flex;
+      background: var(--seg);
+      border-radius: 999px;
+      padding: 5px;
+    }
+
+    .seg button {
+      flex: 1;
+      border: 0;
+      background: transparent;
+      color: #fff;
+      font: inherit;
+      padding: 10px 4px;
+      border-radius: 999px;
+      cursor: pointer;
+    }
+
+    .seg button.on {
+      background: var(--seg-on);
+      color: var(--btn);
+      font-weight: 700;
+    }
+
+    /* ---------- Field drawing ---------- */
+    #field {
+      width: min(100%, 620px);
+      flex: 0 1 620px;
+    }
+
+    #field svg {
+      width: 100%;
+      height: auto;
+      display: block;
+    }
+
+    /* ---------- Timer ---------- */
+    .timer {
+      font-size: 3rem;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .timer small {
+      font-size: 1.1rem;
+      margin-left: 8px;
+    }
+
+    /* ---------- Misc ---------- */
+    .out {
+      max-width: 760px;
+      margin: 0 auto 28px;
+      padding: 0 16px;
+    }
+
+    pre {
+      background: var(--card);
+      border-radius: 12px;
+      padding: 12px;
+      text-align: left;
+      overflow-x: auto;
+      font-size: 0.85rem;
+      margin: 8px 0;
+    }
+
+    .muted {
+      color: var(--muted);
+      font-size: 0.9rem;
+    }
+  </style>
 </head>
+
 <body>
-<h1>WRO Future Engineers Randomizer</h1>
-<div class="wrap">
-  <div class="side">
-    <div class="seg" id="dirSeg">
-      <button data-d="rand" class="on">Random</button><button data-d="CCW">CCW</button><button data-d="CW">CW</button>
+
+  <h1>WRO Future Engineers Randomizer</h1>
+
+  <div class="wrap">
+
+    <!-- Left column: direction + randomize -->
+    <div class="side">
+      <div class="seg" id="dirSeg">
+        <button data-d="rand" class="on">Random</button>
+        <button data-d="CCW">CCW</button>
+        <button data-d="CW">CW</button>
+      </div>
+      <button class="btn" id="rnd">Randomize</button>
     </div>
-    <button class="btn" id="rnd">Randomize</button>
+
+    <!-- Center: the field is drawn here as SVG -->
+    <div id="field"></div>
+
+    <!-- Right column: timer -->
+    <div class="side">
+      <div class="timer">
+        <span id="t">00:00</span><small id="cs">00</small>
+      </div>
+      <button class="btn" id="start">Start timer</button>
+      <button class="btn alt" id="reset">Reset</button>
+    </div>
+
   </div>
-  <div id="field"></div>
-  <div class="side">
-    <div class="timer"><span id="t">00:00</span><small id="cs">00</small></div>
-    <button class="btn" id="start">Start timer</button>
-    <button class="btn alt" id="reset">Reset</button>
-  </div>
-</div>
-<script>
-var POS=[[1000,500],[1500,500],[2000,500],[2500,1000],[2500,1500],[2500,2000],[2000,2500],[1500,2500],[1000,2500],[500,2000],[500,1500],[500,1000]];
-var LINES=[["b",200,3000,1000,2000],["o",0,2580,1000,2000],["o",2580,3000,2000,2000],["b",3000,2580,2000,2000],
-["o",3000,420,2000,1000],["b",2580,0,2000,1000],["o",400,0,1000,1000],["b",0,420,1000,1000]];
-var COL={R:"#e8301f",G:"#2f7d1f",b:"#2a3f9e",o:"#e07b2b"};
-var obs=new Array(12).fill(null), dirMode="rand", dir="CCW";
-function Y(y){return 3000-y}
-function pick(a){return a[Math.floor(Math.random()*a.length)]}
-function randomize(){
-  obs=new Array(12).fill(null);
-  for(var s=0;s<4;s++){
-    var slots=pick([1,2])===1?[pick([0,1,2])]:[0,2];   // 2 obstacles: never the middle
-    slots.forEach(function(k){obs[s*3+k]=pick(["R","G"])});
-  }
-  dir=dirMode==="rand"?pick(["CCW","CW"]):dirMode;
-  render();
-}
-function render(){
-  var s='<svg viewBox="-250 -250 3500 3500" xmlns="http://www.w3.org/2000/svg">';
-  s+='<rect x="-250" y="-250" width="3500" height="3500" fill="#0d0a4a"/><rect x="0" y="0" width="3000" height="3000" fill="#fff"/>';
-  LINES.forEach(function(l){s+='<line x1="'+l[1]+'" y1="'+Y(l[2])+'" x2="'+l[3]+'" y2="'+Y(l[4])+'" stroke="'+COL[l[0]]+'" stroke-width="40"/>'});
-  s+='<rect x="1000" y="1000" width="1000" height="1000" fill="#f2f3fa" stroke="#000" stroke-width="40"/>';
-  // parking bay (magenta) in the start section, mirrored for CW
-  var px=dir==="CCW"?[1000,1375]:[1625,2000];
-  s+='<rect x="'+px[0]+'" y="'+Y(200)+'" width="'+(px[1]-px[0])+'" height="200" fill="#e83ee8" fill-opacity=".12"/>';
-  px.forEach(function(x){s+='<line x1="'+x+'" y1="'+Y(0)+'" x2="'+x+'" y2="'+Y(200)+'" stroke="#e83ee8" stroke-width="40"/>'});
-  s+='<text x="'+((px[0]+px[1])/2)+'" y="'+Y(70)+'" text-anchor="middle" font-size="110" font-weight="700" fill="#e83ee8">P</text>';
-  POS.forEach(function(p,i){
-    s+='<circle cx="'+p[0]+'" cy="'+Y(p[1])+'" r="95" fill="'+(obs[i]?COL[obs[i]]:"#ccc")+'"/>';
-    s+='<text x="'+p[0]+'" y="'+(Y(p[1])+35)+'" text-anchor="middle" font-size="100" font-weight="700" fill="#fff">'+i+'</text>';
-  });
-  s+='<text x="1500" y="1450" text-anchor="middle" font-size="260" font-weight="700" fill="#2860b4">'+(dir==="CCW"?"↺":"↻")+'</text>';
-  s+='<text x="1500" y="1700" text-anchor="middle" font-size="190" font-weight="700" fill="#2860b4">'+dir+'</text></svg>';
-  document.getElementById("field").innerHTML=s;
-}
-document.getElementById("rnd").onclick=randomize;
-document.getElementById("dirSeg").onclick=function(e){
-  var b=e.target.closest("button");if(!b)return;
-  dirMode=b.dataset.d;
-  [].forEach.call(this.children,function(c){c.classList.toggle("on",c===b)});
-  if(dirMode!=="rand"){dir=dirMode;render()}
-};
-// timer
-var t0=0,acc=0,run=false,iv=null;
-function fmt(ms){var c=Math.floor(ms/10)%100,s=Math.floor(ms/1000),m=Math.floor(s/60);s%=60;
-  document.getElementById("t").textContent=String(m).padStart(2,"0")+":"+String(s).padStart(2,"0");
-  document.getElementById("cs").textContent=String(c).padStart(2,"0")}
-function tick(){fmt(acc+performance.now()-t0)}
-document.getElementById("start").onclick=function(){
-  if(!run){run=true;t0=performance.now();iv=setInterval(tick,30);this.textContent="Stop timer"}
-  else{run=false;clearInterval(iv);acc+=performance.now()-t0;this.textContent="Start timer"}
-};
-document.getElementById("reset").onclick=function(){
-  run=false;clearInterval(iv);acc=0;fmt(0);document.getElementById("start").textContent="Start timer"
-};
-randomize();
-</script>
+
+  <script>
+    /* =====================================================
+       FIELD DATA
+       ===================================================== */
+
+    // The 12 possible obstacle positions [x, y] in mm (field is 3000 x 3000).
+    // 4 sections (one per side), 3 positions per section.
+    var POS = [
+      [1000,  500], [1500,  500], [2000,  500],   // bottom side
+      [2500, 1000], [2500, 1500], [2500, 2000],   // right side
+      [2000, 2500], [1500, 2500], [1000, 2500],   // top side
+      [ 500, 2000], [ 500, 1500], [ 500, 1000]    // left side
+    ];
+
+    // Colored corner lines: [color, x1, y1, x2, y2]
+    // "b" = blue, "o" = orange
+    var LINES = [
+      ["b",  200, 3000, 1000, 2000],
+      ["o",    0, 2580, 1000, 2000],
+      ["o", 2580, 3000, 2000, 2000],
+      ["b", 3000, 2580, 2000, 2000],
+      ["o", 3000,  420, 2000, 1000],
+      ["b", 2580,    0, 2000, 1000],
+      ["o",  400,    0, 1000, 1000],
+      ["b",    0,  420, 1000, 1000]
+    ];
+
+    // Colors: R = red obstacle, G = green obstacle, b = blue line, o = orange line
+    var COL = {
+      R: "#e8301f",
+      G: "#2f7d1f",
+      b: "#2a3f9e",
+      o: "#e07b2b"
+    };
+
+
+    /* =====================================================
+       STATE
+       ===================================================== */
+
+    var obs = new Array(12).fill(null);  // obstacle color at each position (null = empty)
+    var dirMode = "rand";                // "rand", "CCW" or "CW" (what the selector says)
+    var dir = "CCW";                     // the direction actually in use
+
+
+    /* =====================================================
+       HELPERS
+       ===================================================== */
+
+    // SVG's y axis points down, the field's points up, so flip it.
+    function Y(y) {
+      return 3000 - y;
+    }
+
+    // Pick a random item from an array.
+    function pick(arr) {
+      return arr[Math.floor(Math.random() * arr.length)];
+    }
+
+
+    /* =====================================================
+       RANDOMIZE
+       ===================================================== */
+
+    function randomize() {
+      obs = new Array(12).fill(null);
+
+      // Each of the 4 sections gets 1 or 2 obstacles.
+      for (var section = 0; section < 4; section++) {
+
+        var slots;
+        if (pick([1, 2]) === 1) {
+          // One obstacle in a random slot (0, 1 or 2)
+          slots = [pick([0, 1, 2])];
+        } else {
+          // Two obstacles: never the middle slot
+          slots = [0, 2];
+        }
+
+        // Give each chosen slot a random red or green obstacle
+        slots.forEach(function (k) {
+          obs[section * 3 + k] = pick(["R", "G"]);
+        });
+      }
+
+      // Direction: random, or whatever the selector is set to
+      dir = (dirMode === "rand") ? pick(["CCW", "CW"]) : dirMode;
+
+      render();
+    }
+
+
+    /* =====================================================
+       DRAW THE FIELD (SVG)
+       ===================================================== */
+
+    function render() {
+      var s = '<svg viewBox="-250 -250 3500 3500" xmlns="http://www.w3.org/2000/svg">';
+
+      // Dark border + white field
+      s += '<rect x="-250" y="-250" width="3500" height="3500" fill="#0d0a4a"/>';
+      s += '<rect x="0" y="0" width="3000" height="3000" fill="#fff"/>';
+
+      // Colored lines
+      LINES.forEach(function (l) {
+        s += '<line x1="' + l[1] + '" y1="' + Y(l[2]) +
+             '" x2="' + l[3] + '" y2="' + Y(l[4]) +
+             '" stroke="' + COL[l[0]] + '" stroke-width="40"/>';
+      });
+
+      // Center square
+      s += '<rect x="1000" y="1000" width="1000" height="1000" ' +
+           'fill="#f2f3fa" stroke="#000" stroke-width="40"/>';
+
+      // Obstacle circles with their position number (grey = empty)
+      POS.forEach(function (p, i) {
+        var fill = obs[i] ? COL[obs[i]] : "#ccc";
+
+        s += '<circle cx="' + p[0] + '" cy="' + Y(p[1]) + '" r="95" fill="' + fill + '"/>';
+        s += '<text x="' + p[0] + '" y="' + (Y(p[1]) + 35) + '" text-anchor="middle" ' +
+             'font-size="100" font-weight="700" fill="#fff">' + i + '</text>';
+      });
+
+      // Direction arrow + label in the middle
+      s += '<text x="1500" y="1450" text-anchor="middle" font-size="260" ' +
+           'font-weight="700" fill="#2860b4">' + (dir === "CCW" ? "↺" : "↻") + '</text>';
+      s += '<text x="1500" y="1700" text-anchor="middle" font-size="190" ' +
+           'font-weight="700" fill="#2860b4">' + dir + '</text>';
+
+      s += '</svg>';
+
+      document.getElementById("field").innerHTML = s;
+    }
+
+
+    /* =====================================================
+       BUTTONS
+       ===================================================== */
+
+    // Randomize button
+    document.getElementById("rnd").onclick = randomize;
+
+    // Direction selector (Random / CCW / CW)
+    document.getElementById("dirSeg").onclick = function (e) {
+      var b = e.target.closest("button");
+      if (!b) return;
+
+      dirMode = b.dataset.d;
+
+      // Highlight the clicked button
+      [].forEach.call(this.children, function (c) {
+        c.classList.toggle("on", c === b);
+      });
+
+      // If a fixed direction was chosen, apply it right away
+      if (dirMode !== "rand") {
+        dir = dirMode;
+        render();
+      }
+    };
+
+
+    /* =====================================================
+       TIMER
+       ===================================================== */
+
+    var t0 = 0;        // when the timer was last started
+    var acc = 0;       // time accumulated from earlier runs (ms)
+    var run = false;   // is the timer running?
+    var iv = null;     // the setInterval handle
+
+    // Show a time in ms as MM:SS and centiseconds
+    function fmt(ms) {
+      var cs = Math.floor(ms / 10) % 100;
+      var sec = Math.floor(ms / 1000);
+      var min = Math.floor(sec / 60);
+      sec = sec % 60;
+
+      document.getElementById("t").textContent =
+        String(min).padStart(2, "0") + ":" + String(sec).padStart(2, "0");
+      document.getElementById("cs").textContent =
+        String(cs).padStart(2, "0");
+    }
+
+    // Called every 30 ms while running
+    function tick() {
+      fmt(acc + performance.now() - t0);
+    }
+
+    // Start / Stop button
+    document.getElementById("start").onclick = function () {
+      if (!run) {
+        // start
+        run = true;
+        t0 = performance.now();
+        iv = setInterval(tick, 30);
+        this.textContent = "Stop timer";
+      } else {
+        // stop
+        run = false;
+        clearInterval(iv);
+        acc += performance.now() - t0;
+        this.textContent = "Start timer";
+      }
+    };
+
+    // Reset button
+    document.getElementById("reset").onclick = function () {
+      run = false;
+      clearInterval(iv);
+      acc = 0;
+      fmt(0);
+      document.getElementById("start").textContent = "Start timer";
+    };
+
+
+    /* =====================================================
+       START
+       ===================================================== */
+
+    randomize();   // generate a field when the page loads
+  </script>
+
 </body>
+
 </html>
