@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>WRO Future Engineers Randomizer</title>
+<style>
+:root{--bg:#ffffff;--fg:#14142b;--muted:#6b6b80;--btn:#d81b78;--btn-fg:#fff;--seg:#d81b78;--seg-on:#fff;--card:#f3f4f8;
+box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#12121c;--fg:#ececf5;--muted:#9a9ab0;--card:#1d1d2c}}
+:root[data-theme="dark"]{--bg:#12121c;--fg:#ececf5;--muted:#9a9ab0;--card:#1d1d2c}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--fg);font-family:"Muli","Segoe UI",system-ui,sans-serif;text-align:center}
+h1{font-weight:500;font-size:clamp(1.4rem,3.5vw,2.2rem);margin:28px 12px 18px}
+.wrap{display:flex;align-items:center;justify-content:center;gap:40px;flex-wrap:wrap;padding:0 16px 24px}
+.side{display:flex;flex-direction:column;gap:18px;width:260px;align-items:stretch}
+.btn{border:0;border-radius:999px;background:var(--btn);color:var(--btn-fg);font:inherit;font-size:1.25rem;padding:16px 20px;cursor:pointer}
+.btn:active{filter:brightness(.9)}
+.btn.alt{background:transparent;color:var(--btn);border:3px solid var(--btn);font-weight:700}
+.seg{display:flex;background:var(--seg);border-radius:999px;padding:5px}
+.seg button{flex:1;border:0;background:transparent;color:#fff;font:inherit;padding:10px 4px;border-radius:999px;cursor:pointer}
+.seg button.on{background:var(--seg-on);color:var(--btn);font-weight:700}
+#field{width:min(100%,620px);flex:0 1 620px}
+#field svg{width:100%;height:auto;display:block}
+.timer{font-size:3rem;font-variant-numeric:tabular-nums}
+.timer small{font-size:1.1rem;margin-left:8px}
+.out{max-width:760px;margin:0 auto 28px;padding:0 16px}
+pre{background:var(--card);border-radius:12px;padding:12px;text-align:left;overflow-x:auto;font-size:.85rem;margin:8px 0}
+.muted{color:var(--muted);font-size:.9rem}
+</style>
+</head>
+<body>
+<h1>WRO Future Engineers Randomizer</h1>
+<div class="wrap">
+  <div class="side">
+    <div class="seg" id="dirSeg">
+      <button data-d="rand" class="on">Random</button><button data-d="CCW">CCW</button><button data-d="CW">CW</button>
+    </div>
+    <button class="btn" id="rnd">Randomize</button>
+  </div>
+  <div id="field"></div>
+  <div class="side">
+    <div class="timer"><span id="t">00:00</span><small id="cs">00</small></div>
+    <button class="btn" id="start">Start timer</button>
+    <button class="btn alt" id="reset">Reset</button>
+  </div>
+</div>
+<script>
+var POS=[[1000,500],[1500,500],[2000,500],[2500,1000],[2500,1500],[2500,2000],[2000,2500],[1500,2500],[1000,2500],[500,2000],[500,1500],[500,1000]];
+var LINES=[["b",200,3000,1000,2000],["o",0,2580,1000,2000],["o",2580,3000,2000,2000],["b",3000,2580,2000,2000],
+["o",3000,420,2000,1000],["b",2580,0,2000,1000],["o",400,0,1000,1000],["b",0,420,1000,1000]];
+var COL={R:"#e8301f",G:"#2f7d1f",b:"#2a3f9e",o:"#e07b2b"};
+var obs=new Array(12).fill(null), dirMode="rand", dir="CCW";
+function Y(y){return 3000-y}
+function pick(a){return a[Math.floor(Math.random()*a.length)]}
+function randomize(){
+  obs=new Array(12).fill(null);
+  for(var s=0;s<4;s++){
+    var slots=pick([1,2])===1?[pick([0,1,2])]:[0,2];   // 2 obstacles: never the middle
+    slots.forEach(function(k){obs[s*3+k]=pick(["R","G"])});
+  }
+  dir=dirMode==="rand"?pick(["CCW","CW"]):dirMode;
+  render();
+}
+function render(){
+  var s='<svg viewBox="-250 -250 3500 3500" xmlns="http://www.w3.org/2000/svg">';
+  s+='<rect x="-250" y="-250" width="3500" height="3500" fill="#0d0a4a"/><rect x="0" y="0" width="3000" height="3000" fill="#fff"/>';
+  LINES.forEach(function(l){s+='<line x1="'+l[1]+'" y1="'+Y(l[2])+'" x2="'+l[3]+'" y2="'+Y(l[4])+'" stroke="'+COL[l[0]]+'" stroke-width="40"/>'});
+  s+='<rect x="1000" y="1000" width="1000" height="1000" fill="#f2f3fa" stroke="#000" stroke-width="40"/>';
+  // parking bay (magenta) in the start section, mirrored for CW
+  var px=dir==="CCW"?[1000,1375]:[1625,2000];
+  s+='<rect x="'+px[0]+'" y="'+Y(200)+'" width="'+(px[1]-px[0])+'" height="200" fill="#e83ee8" fill-opacity=".12"/>';
+  px.forEach(function(x){s+='<line x1="'+x+'" y1="'+Y(0)+'" x2="'+x+'" y2="'+Y(200)+'" stroke="#e83ee8" stroke-width="40"/>'});
+  s+='<text x="'+((px[0]+px[1])/2)+'" y="'+Y(70)+'" text-anchor="middle" font-size="110" font-weight="700" fill="#e83ee8">P</text>';
+  POS.forEach(function(p,i){
+    s+='<circle cx="'+p[0]+'" cy="'+Y(p[1])+'" r="95" fill="'+(obs[i]?COL[obs[i]]:"#ccc")+'"/>';
+    s+='<text x="'+p[0]+'" y="'+(Y(p[1])+35)+'" text-anchor="middle" font-size="100" font-weight="700" fill="#fff">'+i+'</text>';
+  });
+  s+='<text x="1500" y="1450" text-anchor="middle" font-size="260" font-weight="700" fill="#2860b4">'+(dir==="CCW"?"↺":"↻")+'</text>';
+  s+='<text x="1500" y="1700" text-anchor="middle" font-size="190" font-weight="700" fill="#2860b4">'+dir+'</text></svg>';
+  document.getElementById("field").innerHTML=s;
+}
+document.getElementById("rnd").onclick=randomize;
+document.getElementById("dirSeg").onclick=function(e){
+  var b=e.target.closest("button");if(!b)return;
+  dirMode=b.dataset.d;
+  [].forEach.call(this.children,function(c){c.classList.toggle("on",c===b)});
+  if(dirMode!=="rand"){dir=dirMode;render()}
+};
+// timer
+var t0=0,acc=0,run=false,iv=null;
+function fmt(ms){var c=Math.floor(ms/10)%100,s=Math.floor(ms/1000),m=Math.floor(s/60);s%=60;
+  document.getElementById("t").textContent=String(m).padStart(2,"0")+":"+String(s).padStart(2,"0");
+  document.getElementById("cs").textContent=String(c).padStart(2,"0")}
+function tick(){fmt(acc+performance.now()-t0)}
+document.getElementById("start").onclick=function(){
+  if(!run){run=true;t0=performance.now();iv=setInterval(tick,30);this.textContent="Stop timer"}
+  else{run=false;clearInterval(iv);acc+=performance.now()-t0;this.textContent="Start timer"}
+};
+document.getElementById("reset").onclick=function(){
+  run=false;clearInterval(iv);acc=0;fmt(0);document.getElementById("start").textContent="Start timer"
+};
+randomize();
+</script>
+</body>
+</html>
